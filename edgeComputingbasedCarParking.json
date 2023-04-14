@@ -1,0 +1,239 @@
+[
+    {
+        "id": "2f949c632eaa6d0d",
+        "type": "tab",
+        "label": "edgeComputing_final",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "f6c8de897af08d2f",
+        "type": "inject",
+        "z": "2f949c632eaa6d0d",
+        "name": "parkingStatus",
+        "props": [
+            {
+                "p": "payload.parkingStatus",
+                "v": "{\"parkingStatus\":1}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "3",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "x": 160,
+        "y": 80,
+        "wires": [
+            [
+                "7baf5c5559bfc6aa"
+            ]
+        ]
+    },
+    {
+        "id": "e05eb95a6dafcb72",
+        "type": "inject",
+        "z": "2f949c632eaa6d0d",
+        "name": "cost",
+        "props": [
+            {
+                "p": "payload.cost",
+                "v": "{\"Cost\":0}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "3",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "x": 170,
+        "y": 160,
+        "wires": [
+            [
+                "7baf5c5559bfc6aa"
+            ]
+        ]
+    },
+    {
+        "id": "93951284cd52b46b",
+        "type": "inject",
+        "z": "2f949c632eaa6d0d",
+        "name": "slotNum",
+        "props": [
+            {
+                "p": "payload.slotNum",
+                "v": "{\"slotNum\":1}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "3",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "x": 160,
+        "y": 240,
+        "wires": [
+            [
+                "7baf5c5559bfc6aa"
+            ]
+        ]
+    },
+    {
+        "id": "7baf5c5559bfc6aa",
+        "type": "function",
+        "z": "2f949c632eaa6d0d",
+        "name": "computing function",
+        "func": "const NUM_PARKING_SPOTS = 10;\nconst MAX_PARKING_TIME = 120;\nconst parking_spots = Array(NUM_PARKING_SPOTS).fill(0); // initialize all spots to empty\nlet last_update_time = 0;\n\nfunction read_sensor(spot) {\n    // simulate sensor data randomly\n    const sensor_data = Math.floor(Math.random() * 2);\n    return sensor_data;\n}\n\nfunction getRndInteger(min, max) {\n    return Math.floor(Math.random() * (max - min)) + min;\n}\n\nlet q;\nlet parkStat;\nlet cst;\nlet sensor_data;\nlet i;\n\nfunction parking_t() {\n    const time = getRndInteger(20, 120);\n    return time;\n}\nlet parking_time;\nlet current_time = Math.floor(Date.now() / 1000);\nif (current_time - last_update_time >= 5) { // only check every 5 seconds to reduce edge computing load\n    // update parking spots based on sensor data\n    try {\n        for (i = 0; i < NUM_PARKING_SPOTS; i++) {\n            sensor_data = read_sensor(i);\n            parkStat = parking_spots[i];\n            if (sensor_data === 1) {\n                if (parking_spots[i] === 0) { // spot was empty before\n                    parking_spots[i] = 1; // mark spot as occupied\n                    console.log(`Car entered spot ${i}`);\n                    q = i;\n                }\n            }\n\n        }\n        last_update_time = current_time;\n\n        msg.payload.parkingStatus = sensor_data;\n        msg.payload.cost = cst;\n        msg.payload.slotNum = q;\n        //msg.payload.time = \"Car entered\";\n        return msg;\n    }\n\n    finally {\n        for (i = 0; i < NUM_PARKING_SPOTS; i++) {\n            sensor_data = read_sensor(i);\n            parkStat = parking_spots[i];\n\n            if (sensor_data === 0) {\n                if (parking_spots[i] === 1) { // spot was occupied before\n                    parking_spots[i] = 0; // mark spot as empty\n                    console.log(`Car left spot ${i}`);\n                    parking_time = parking_t();//current_time - last_update_time;\n                    if (parking_time > MAX_PARKING_TIME) { // cap parking time at maximum allowed\n                        parking_time = MAX_PARKING_TIME;\n                    }\n                    const charge = parking_time * 0.75;\n                    cst = Math.round(charge);\n                    console.log(`Parking time: ${parking_time} minutes`);\n                    console.log(`Charge: ₹${charge.toFixed(2)}`);\n                }\n            }\n\n        }\n\n\n        last_update_time = current_time;\n\n        msg.payload.parkingStatus = sensor_data;\n        msg.payload.cost = cst;\n        msg.payload.slotNum = q;\n        msg.payload.timeTaken = parking_time;\n        return msg;\n    }\n\n}\n\n\n\n\n\n\n\n\n\n\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 200,
+        "wires": [
+            [
+                "cf93a5b8e8c91beb",
+                "948a2ae5d0a9a77d"
+            ]
+        ]
+    },
+    {
+        "id": "d58f241aca68a939",
+        "type": "http request",
+        "z": "2f949c632eaa6d0d",
+        "name": "",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://demo.thingsboard.io/api/v1/f6NoAHhhb9R9MndD5rAL/telemetry",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "credentials": {},
+        "x": 710,
+        "y": 200,
+        "wires": [
+            [
+                "74e2bc9b863c165a"
+            ]
+        ]
+    },
+    {
+        "id": "e75077aaa245fc20",
+        "type": "inject",
+        "z": "2f949c632eaa6d0d",
+        "name": "time",
+        "props": [
+            {
+                "p": "payload.timeTaken",
+                "v": "{\"timeTaken\":0}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "3",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "x": 170,
+        "y": 340,
+        "wires": [
+            [
+                "7baf5c5559bfc6aa"
+            ]
+        ]
+    },
+    {
+        "id": "74e2bc9b863c165a",
+        "type": "debug",
+        "z": "2f949c632eaa6d0d",
+        "name": "debug ",
+        "active": false,
+        "tosidebar": false,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 870,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "cf93a5b8e8c91beb",
+        "type": "delay",
+        "z": "2f949c632eaa6d0d",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "2",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 600,
+        "y": 260,
+        "wires": [
+            [
+                "e833eb3aef217fb4"
+            ]
+        ]
+    },
+    {
+        "id": "948a2ae5d0a9a77d",
+        "type": "delay",
+        "z": "2f949c632eaa6d0d",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "2",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 600,
+        "y": 120,
+        "wires": [
+            [
+                "d58f241aca68a939"
+            ]
+        ]
+    },
+    {
+        "id": "e833eb3aef217fb4",
+        "type": "debug",
+        "z": "2f949c632eaa6d0d",
+        "name": "Edge Output",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 790,
+        "y": 280,
+        "wires": []
+    }
+]
