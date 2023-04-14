@@ -1,0 +1,94 @@
+const NUM_PARKING_SPOTS = 10;
+const MAX_PARKING_TIME = 120;
+const parking_spots = Array(NUM_PARKING_SPOTS).fill(0); // initialize all spots to empty
+let last_update_time = 0;
+
+function read_sensor(spot) {
+    // simulate sensor data randomly
+    const sensor_data = Math.floor(Math.random() * 2);
+    return sensor_data;
+}
+
+function getRndInteger(min, max) {
+    return Math.floor(Math.random() * (max - min)) + min;
+}
+
+let q;
+let parkStat;
+let cst;
+let sensor_data;
+let i;
+
+function parking_t() {
+    const time = getRndInteger(20, 120);
+    return time;
+}
+let parking_time;
+let current_time = Math.floor(Date.now() / 1000);
+if (current_time - last_update_time >= 5) { // only check every 5 seconds to reduce edge computing load
+    // update parking spots based on sensor data
+    try {
+        for (i = 0; i < NUM_PARKING_SPOTS; i++) {
+            sensor_data = read_sensor(i);
+            parkStat = parking_spots[i];
+            if (sensor_data === 1) {
+                if (parking_spots[i] === 0) { // spot was empty before
+                    parking_spots[i] = 1; // mark spot as occupied
+                    console.log(`Car entered spot ${i}`);
+                    q = i;
+                }
+            }
+
+        }
+        last_update_time = current_time;
+
+        msg.payload.parkingStatus = sensor_data;
+        msg.payload.cost = cst;
+        msg.payload.slotNum = q;
+        //msg.payload.time = "Car entered";
+        return msg;
+    }
+
+    finally {
+        for (i = 0; i < NUM_PARKING_SPOTS; i++) {
+            sensor_data = read_sensor(i);
+            parkStat = parking_spots[i];
+
+            if (sensor_data === 0) {
+                if (parking_spots[i] === 1) { // spot was occupied before
+                    parking_spots[i] = 0; // mark spot as empty
+                    console.log(`Car left spot ${i}`);
+                    parking_time = parking_t();//current_time - last_update_time;
+                    if (parking_time > MAX_PARKING_TIME) { // cap parking time at maximum allowed
+                        parking_time = MAX_PARKING_TIME;
+                    }
+                    const charge = parking_time * 0.75;
+                    cst = Math.round(charge);
+                    console.log(`Parking time: ${parking_time} minutes`);
+                    console.log(`Charge: ₹${charge.toFixed(2)}`);
+                }
+            }
+
+        }
+
+
+        last_update_time = current_time;
+
+        msg.payload.parkingStatus = sensor_data;
+        msg.payload.cost = cst;
+        msg.payload.slotNum = q;
+        msg.payload.timeTaken = parking_time;
+        return msg;
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
